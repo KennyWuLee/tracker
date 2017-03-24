@@ -4,7 +4,6 @@ const url = require('url');
 const hostname = '127.0.0.1';
 const port = 3000;
 
-// should be higher
 const interval = 60;
 
 var data = {};
@@ -39,7 +38,14 @@ function addEntry(info_hash, peer_id, ip, port) {
   if(! data.hasOwnProperty(info_hash)) {
     data[info_hash] = {}
   }
-  data[info_hash][peer_id] = { "ip": ip, "port": port };
+  data[info_hash][peer_id] = { "type": "regular, ""ip": ip, "port": port };
+}
+
+function addTorEntry(info_hash, peer_id, address) {
+  if(! data.hasOwnProperty(info_hash)) {
+    data[info_hash] = {}
+  }
+  data[info_hash][peer_id] = { "type": "tor", "address": address };
 }
 
 function encodePeerList(info_hash) {
@@ -50,12 +56,18 @@ function encodePeerList(info_hash) {
         result += "d";
           result += "7:peer id";
             result += "20:" + peer;
-          result += "2:ip";
-            var ip = data[info_hash][peer].ip;
-            result += ip.length + ":" + ip;
-          result += "4:port";
-            var port = data[info_hash][peer].port;
-            result += "i" + port + "e";
+          if(data[info_hash][peer].hasOwnProperty("address")) {
+            result += "7:address"
+              var adr = data[info_hash][peer].address;
+              result += address.length + ":" + address;
+          } else {
+            result += "2:ip";
+              var ip = data[info_hash][peer].ip;
+              result += ip.length + ":" + ip;
+            result += "4:port";
+              var port = data[info_hash][peer].port;
+              result += "i" + port + "e";
+          }
         result += "e";
       }
     }
@@ -74,13 +86,13 @@ function encodeResponse(info_hash) {
   return result;
 }
 
+// add param address for tor addresse
 const server = http.createServer((req, res) => {
   var requestUrl = url.parse(req.url);
   if(requestUrl.pathname === "/announce") {
     var params = parseParameters(requestUrl.query);
     if(params.hasOwnProperty("info_hash")
       && params.hasOwnProperty("peer_id")
-      && params.hasOwnProperty("port")
       && params.hasOwnProperty("uploaded")
       && params.hasOwnProperty("downloaded")
       && params.hasOwnProperty("left"))
@@ -91,13 +103,19 @@ const server = http.createServer((req, res) => {
       } else {
         console.log("no event");
       }
-      var ip;
-      if(params.hasOwnProperty("ip")) {
-        ip = params.ip;
+      if(params.hasOwnProperty("address")) {
+        // tor case
+        addTorEntry(params.info_hash, params.peer_id, params.address);
       } else {
-        ip = req.connection.remoteAddress;
+        // regular case
+        var ip;
+        if(params.hasOwnProperty("ip")) {
+          ip = params.ip;
+        } else {
+          ip = req.connection.remoteAddress;
+        }
+        addEntry(params.info_hash, params.peer_id, ip, params.port);
       }
-      addEntry(params.info_hash, params.peer_id, ip, params.port);
       var responseText = encodeResponse(params.info_hash);
       console.log(responseText);
       res.statusCode = 200;
