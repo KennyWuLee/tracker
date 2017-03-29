@@ -38,7 +38,7 @@ function addEntry(info_hash, peer_id, ip, port) {
   if(! data.hasOwnProperty(info_hash)) {
     data[info_hash] = {}
   }
-  data[info_hash][peer_id] = { "type": "regular, ""ip": ip, "port": port };
+  data[info_hash][peer_id] = { "type": "regular", "ip": ip, "port": port };
 }
 
 function addTorEntry(info_hash, peer_id, address) {
