@@ -41,11 +41,11 @@ function addEntry(info_hash, peer_id, ip, port) {
   data[info_hash][peer_id] = { "type": "regular", "ip": ip, "port": port };
 }
 
-function addTorEntry(info_hash, peer_id, address) {
+function addTorEntry(info_hash, peer_id, address, port) {
   if(! data.hasOwnProperty(info_hash)) {
     data[info_hash] = {}
   }
-  data[info_hash][peer_id] = { "type": "tor", "address": address };
+  data[info_hash][peer_id] = { "type": "tor", "address": address, "port": port };
 }
 
 function encodePeerList(info_hash) {
@@ -56,17 +56,17 @@ function encodePeerList(info_hash) {
         result += "d";
           result += "7:peer id";
             result += "20:" + peer;
+          result += "4:port";
+            var port = data[info_hash][peer].port;
+            result += "i" + port + "e";
           if(data[info_hash][peer].hasOwnProperty("address")) {
             result += "7:address"
               var adr = data[info_hash][peer].address;
-              result += address.length + ":" + address;
+              result += adr.length + ":" + adr;
           } else {
             result += "2:ip";
               var ip = data[info_hash][peer].ip;
               result += ip.length + ":" + ip;
-            result += "4:port";
-              var port = data[info_hash][peer].port;
-              result += "i" + port + "e";
           }
         result += "e";
       }
@@ -105,7 +105,7 @@ const server = http.createServer((req, res) => {
       }
       if(params.hasOwnProperty("address")) {
         // tor case
-        addTorEntry(params.info_hash, params.peer_id, params.address);
+        addTorEntry(params.info_hash, params.peer_id, params.address, params.port);
       } else {
         // regular case
         var ip;
