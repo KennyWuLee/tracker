@@ -1,8 +1,8 @@
 const http = require('http');
 const url = require('url');
 
-const hostname = '127.0.0.1';
-const port = 3000;
+const hostname = process.argv[2];
+const port = process.argv[3];
 
 const interval = 60;
 
